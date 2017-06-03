@@ -49,7 +49,7 @@ class PriceUpdate(object):
         
             # If the volume of the previous days was 0, update adj_close
             try:
-                if True in sinfo[sinfo['Date'] > updated_date]['Volume'] == 0: # sinfo['Volume'][-2] == 0 and sinfo['Volume'][-1] != 0: #전날 거래량이 0, 당일 거래량이 0이 아닌경우
+                if True in sinfo.loc[sinfo.index > updated_date, 'Volume'] == 0: # sinfo['Volume'][-2] == 0 and sinfo['Volume'][-1] != 0: #전날 거래량이 0, 당일 거래량이 0이 아닌경우
                     print('Updating Adj Close')
                     sinfo = self._get_adj_close(code) 
                 
