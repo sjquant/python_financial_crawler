@@ -66,7 +66,7 @@ class PriceUpdate(object):
            
             time_taken = time.time() - start_time
             print(str(index + 1) + "--- %s seconds ---" % time_taken) #print index and time elapsed
-            if time_taken > 1000: # exit program if time taken > 1000
+            if time_taken > 10: # exit program if time taken > 1000
                 exit()
 
     # get last_updated date in table
