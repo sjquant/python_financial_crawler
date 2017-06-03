@@ -49,14 +49,13 @@ class PriceUpdate(object):
         
             # If the volume of the previous days was 0, update adj_close
             try:
-                if sinfo['Volume'][-2] == 0 and sinfo['Volume'][-1] != 0: #전날 거래량이 0, 당일 거래량이 0이 아닌경우
+                if True in sinfo[sinfo['Date'] > updated_date]['Volume'] == 0: # sinfo['Volume'][-2] == 0 and sinfo['Volume'][-1] != 0: #전날 거래량이 0, 당일 거래량이 0이 아닌경우
                     print('Updating Adj Close')
                     sinfo = self._get_adj_close(code) 
                 
             except IndexError: # If a stock was listed recently
-                sinfo['Adj_Close'] = sinfo['Close']
+                pass
                 
-
             sinfo['Code'] = Acode # Add Code Column
             sinfo.reset_index(inplace = True)
             sinfo.set_index('Code', inplace = True) #reset index
@@ -64,7 +63,11 @@ class PriceUpdate(object):
                 sinfo = sinfo.loc[sinfo['Date'] > updated_date] # get data which was not updated
             sinfo.to_sql('PriceInfo', self.con, if_exists='append')
             time.sleep(1)
-            print(str(index + 1) + "--- %s seconds ---" % (time.time() - start_time)) #print index and time elapsed
+           
+            time_taken = time.time() - start_time
+            print(str(index + 1) + "--- %s seconds ---" % time_taken) #print index and time elapsed
+            if time_taken > 1000: # exit program if time taken > 1000
+                exit()
 
     # get last_updated date in table
     def _last_date_in_table(self, code, table):
@@ -111,9 +114,9 @@ class PriceUpdate(object):
                 pass
                 
             if updated_date == None: #If there is not this code data in the table
-                sinfo = self.spider.get_minutely_ohlcv(code, '1', repeat = True, repeat_cnt = 15, adj_close = 0)
+                sinfo = self.spider.get_minutely_ohlcv(code, '1', repeat = True, repeat_cnt = 15)
             else:
-                sinfo = self.spider.get_minutely_ohlcv(code, '1', adj_close = 0) #get minutely ohlcv 
+                sinfo = self.spider.get_minutely_ohlcv(code, '1') #get minutely ohlcv 
       
 
             sinfo['Code'] = Acode # Add Code Column
