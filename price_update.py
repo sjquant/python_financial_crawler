@@ -4,6 +4,7 @@ from kiwooma.spider import Spider
 import sqlite3
 import pandas as pd
 from datetime import datetime
+from datetime import timedelta
 import time
 
 class PriceUpdate(object):
@@ -31,12 +32,11 @@ class PriceUpdate(object):
             if code[-1] != '0': # Exclude Non Ordinary Shares
                 continue 
             Acode = 'A' + code # change code name according to the code name in table
-            print('A' + code)
+            print(str(index + 1) +  '__A' + code)
 
             updated_date = self._last_date_in_table(Acode, 'PriceInfo')
             try:           
                 if datetime.today().date() == updated_date.date() + pd.Timedelta(days=1): # updated date in table
-                    print(Acode + ' already updated.')
                     continue
             except AttributeError: # When updated_date is None
                 pass
@@ -49,9 +49,12 @@ class PriceUpdate(object):
         
             # If the volume of the previous days was 0, update adj_close
             try:
-                if True in sinfo.loc[sinfo.index > updated_date, 'Volume'] == 0: # sinfo['Volume'][-2] == 0 and sinfo['Volume'][-1] != 0: #전날 거래량이 0, 당일 거래량이 0이 아닌경우
-                    print('Updating Adj Close')
-                    sinfo = self._get_adj_close(code) 
+                if True in sinfo.loc[sinfo.index > updated_date, 'Volume'] == 0: # If there is data after updated data which have volume of zero
+                    if sinfo.iloc[0]['Volume'] != 0: #if volume of the most recent day is not zero
+                        print('Updating Adj Close')
+                        sinfo = self._get_adj_close(code) 
+                    else: #if volume of the most recent day is equal to zero
+                        continue #not update the price
                 
             except IndexError: # If a stock was listed recently
                 pass
@@ -62,11 +65,11 @@ class PriceUpdate(object):
             if updated_date != None:
                 sinfo = sinfo.loc[sinfo['Date'] > updated_date] # get data which was not updated
             sinfo.to_sql('PriceInfo', self.con, if_exists='append')
-            time.sleep(1)
+            time.sleep(0.5)
            
             time_taken = time.time() - start_time
-            print(str(index + 1) + "--- %s seconds ---" % time_taken) #print index and time elapsed
-            if time_taken > 10: # exit program if time taken > 1000
+            print("--- %s seconds ---" % time_taken) #print index and time elapsed
+            if time_taken > 800: # exit program if time taken > 1000
                 exit()
 
     # get last_updated date in table
@@ -103,12 +106,11 @@ class PriceUpdate(object):
             if code[-1] != '0': # Exclude Non Ordinary Shares
                 continue 
             Acode = 'A' + code # change code name according to the code name in table
-            print('A' + code)
+            print(str(index + 1) +  '__A' + code)
 
             updated_date = self._last_date_in_table(Acode, 'MinutePriceInfo')
             try:           
-                if datetime.today().date() == updated_date.date() + pd.Timedelta(days=1): # updated date in table
-                    print(Acode + ' already updated.')
+                if datetime.today().date() - updated_date.date() < timedelta(days = 7): # updated date in table
                     continue
             except AttributeError: # When updated_date is None
                 pass
@@ -116,7 +118,7 @@ class PriceUpdate(object):
             if updated_date == None: #If there is not this code data in the table
                 sinfo = self.spider.get_minutely_ohlcv(code, '1', repeat = True, repeat_cnt = 15)
             else:
-                sinfo = self.spider.get_minutely_ohlcv(code, '1') #get minutely ohlcv 
+                sinfo = self.spider.get_minutely_ohlcv(code, '1', repeat = True, repeat_cnt = 3) #get minutely ohlcv 
       
 
             sinfo['Code'] = Acode # Add Code Column
@@ -125,9 +127,9 @@ class PriceUpdate(object):
             if updated_date != None:
                 sinfo = sinfo.loc[sinfo['Date'] > updated_date] # get data which was not updated
             sinfo.to_sql('MinutePriceInfo', self.con, if_exists='append')
-            time.sleep(1)
+            time.sleep(0.5)
             
             time_taken = time.time() - start_time
-            print(str(index + 1) + "--- %s seconds ---" % time_taken) #print index and time elapsed
-            if time_taken > 1000: # exit program if time taken > 1000
+            print("--- %s seconds ---" % time_taken) #print index and time elapsed
+            if time_taken > 800: # exit program if time taken > 1000
                 exit()
